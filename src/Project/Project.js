@@ -7,7 +7,7 @@ import World from './World/World.js';
 import Resources from './Utils/Resources.js';
 import sources from './sources.js'
 import Boid from './World/Boid.js'
-
+import { GPUComputationRenderer } from 'three/examples/jsm/misc/GPUComputationRenderer.js';
 
 
 let instance = null;
@@ -60,11 +60,7 @@ export default class Project
     {
         this.camera.update();
         this.renderer.update();
-        this.boid.applyForce(this.gravity);
-        //window.addEventListener('mousedown', this.boid.applyForce(this.wind), false);
-        //this.boid.applyForce(this.wind);
-        this.boid.update();
-        this.boid.edges();
+        
        
     }
 }
