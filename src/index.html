@@ -10,6 +10,7 @@
     <!-- Fragment shader for protoplanet's position -->
 <script id="computeShaderPosition" type="x-shader/x-fragment">
     // 현재 위치 정보를 결정하다
+
     #define delta ( 1.0 / 60.0 )
     void main() {
         vec2 uv = gl_FragCoord.xy / resolution.xy;
@@ -21,6 +22,8 @@
 
         // 이동하는 방향으로 속도를 곱한 수치를 현재 위치에 더한다.
         pos += vel * delta;
+
+       
         gl_FragColor = vec4( pos, 1.0 );
     }
 </script>
@@ -31,14 +34,22 @@
     // 이동 방향에 대해 여러 가지 계산할 수 있는 셰이더.
     // 이번에는 아무것도 안 했어.
     // 여기서 Vel의 xyz에 대한 정보를 덮어쓰면 그에 따라 이동 방향이 바뀐다.
+    
     #include <common>
 
     void main() {
+
+        vec3 acceleration = vec3( 0.0 );
         vec2 uv = gl_FragCoord.xy / resolution.xy;
+        vec4 tmpPos = texture2D( texturePosition, uv );
+        vec3 pos = tmpPos.xyz;
+
         float idParticle = uv.y * resolution.x + uv.x;
         vec4 tmpVel = texture2D( textureVelocity, uv );
         vec3 vel = tmpVel.xyz;
-
+       
+       
+        
         gl_FragColor = vec4( vel.xyz, 1.0 );
     }
 </script>
@@ -58,6 +69,7 @@
 
 
     void main() {
+        
         vec4 posTemp = texture2D( texturePosition, uv );
         vec3 pos = posTemp.xyz;
         vColor = vec4( 1.0, 0.7, 1.0, 1.0 );
