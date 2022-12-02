@@ -22,8 +22,7 @@
 
         // 이동하는 방향으로 속도를 곱한 수치를 현재 위치에 더한다.
         pos += vel * delta;
-
-       
+    
         gl_FragColor = vec4( pos, 1.0 );
     }
 </script>
@@ -47,9 +46,8 @@
         float idParticle = uv.y * resolution.x + uv.x;
         vec4 tmpVel = texture2D( textureVelocity, uv );
         vec3 vel = tmpVel.xyz;
-       
-       
         
+       
         gl_FragColor = vec4( vel.xyz, 1.0 );
     }
 </script>

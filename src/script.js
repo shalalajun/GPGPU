@@ -338,7 +338,7 @@ function fillTextures( texturePosition, textureVelocity ) {
         var x, y, z;
         x = Math.random()*500-250;
         z = Math.random()*500-250;
-        y = 0;
+        y = 10;
         // posArray의 실태는 1차원 배열이기 때문에
         // x,y,z,w 순서대로 채워간다.
         // w는 이번에는 사용하지 않지만 배열의 순서등을 채워 두면 여러가지 사용할 수 있어 편리
@@ -350,9 +350,9 @@ function fillTextures( texturePosition, textureVelocity ) {
         // 이동하는 방향은 일단 랜덤으로 정해볼게.
         // 이걸로 랜덤한 방향으로 튀는 파티클이 완성될 거야.
 
-        velArray[ k + 0 ] = Math.random()*2-1;
-        velArray[ k + 1 ] = Math.random()*2-1;;
-        velArray[ k + 2 ] = Math.random()*2-1;
+        velArray[ k + 0 ] = 0;
+        velArray[ k + 1 ] = -2;
+        velArray[ k + 2 ] = 0;
         velArray[ k + 3 ] = Math.random()*2-1;
     }
 }
