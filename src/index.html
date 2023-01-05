@@ -11,7 +11,119 @@
 <script id="computeShaderPosition" type="x-shader/x-fragment">
     // 현재 위치 정보를 결정하다
 
+    
+
     #define delta ( 1.0 / 60.0 )
+
+    uniform float time;
+
+    vec3 mod289(vec3 x) {
+        return x - floor(x * (1.0 / 289.0)) * 289.0;
+    }
+    
+    vec2 mod289(vec2 x) {
+        return x - floor(x * (1.0 / 289.0)) * 289.0;
+    }
+    
+    vec3 permute(vec3 x) {
+        return mod289(((x*34.0)+1.0)*x);
+    }
+    
+    float noise(vec2 v)
+    {
+        const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0
+                          0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)
+                         -0.577350269189626,  // -1.0 + 2.0 * C.x
+                          0.024390243902439); // 1.0 / 41.0
+        // First corner
+        vec2 i  = floor(v + dot(v, C.yy) );
+        vec2 x0 = v -   i + dot(i, C.xx);
+    
+        // Other corners
+        vec2 i1;
+        //i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0
+        //i1.y = 1.0 - i1.x;
+        i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+        // x0 = x0 - 0.0 + 0.0 * C.xx ;
+        // x1 = x0 - i1 + 1.0 * C.xx ;
+        // x2 = x0 - 1.0 + 2.0 * C.xx ;
+        vec4 x12 = x0.xyxy + C.xxzz;
+        x12.xy -= i1;
+    
+        // Permutations
+        i = mod289(i); // Avoid truncation effects in permutation
+        vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+            + i.x + vec3(0.0, i1.x, 1.0 ));
+    
+        vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+        m = m*m ;
+        m = m*m ;
+    
+        // Gradients: 41 points uniformly over a line, mapped onto a diamond.
+        // The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)
+    
+        vec3 x = 2.0 * fract(p * C.www) - 1.0;
+        vec3 h = abs(x) - 0.5;
+        vec3 ox = floor(x + 0.5);
+        vec3 a0 = x - ox;
+    
+        // Normalise gradients implicitly by scaling m
+        // Approximation of: m *= inversesqrt( a0*a0 + h*h );
+        m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+    
+        // Compute final noise value at P
+        vec3 g;
+        g.x  = a0.x  * x0.x  + h.x  * x0.y;
+        g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+        return 130.0 * dot(m, g);
+    }
+    
+    vec3 curl(float	x,	float	y,	float	z)
+    {
+    
+        float	eps	= 1., eps2 = 2. * eps;
+        float	n1,	n2,	a,	b;
+    
+        x += time * .05;
+        y += time * .05;
+        z += time * .05;
+    
+        vec3	curl = vec3(0.);
+    
+        n1	=	noise(vec2( x,	y	+	eps ));
+        n2	=	noise(vec2( x,	y	-	eps ));
+        a	=	(n1	-	n2)/eps2;
+    
+        n1	=	noise(vec2( x,	z	+	eps));
+        n2	=	noise(vec2( x,	z	-	eps));
+        b	=	(n1	-	n2)/eps2;
+    
+        curl.x	=	a	-	b;
+    
+        n1	=	noise(vec2( y,	z	+	eps));
+        n2	=	noise(vec2( y,	z	-	eps));
+        a	=	(n1	-	n2)/eps2;
+    
+        n1	=	noise(vec2( x	+	eps,	z));
+        n2	=	noise(vec2( x	+	eps,	z));
+        b	=	(n1	-	n2)/eps2;
+    
+        curl.y	=	a	-	b;
+    
+        n1	=	noise(vec2( x	+	eps,	y));
+        n2	=	noise(vec2( x	-	eps,	y));
+        a	=	(n1	-	n2)/eps2;
+    
+        n1	=	noise(vec2(  y	+	eps,	z));
+        n2	=	noise(vec2(  y	-	eps,	z));
+        b	=	(n1	-	n2)/eps2;
+    
+        curl.z	=	a	-	b;
+    
+        return	curl;
+    }
+
+   
     void main() {
         vec2 uv = gl_FragCoord.xy / resolution.xy;
         vec4 tmpPos = texture2D( texturePosition, uv );
@@ -22,7 +134,15 @@
 
         // 이동하는 방향으로 속도를 곱한 수치를 현재 위치에 더한다.
         pos += vel * delta;
-    
+
+
+        float frequency = 1.0;
+        float amplitude = 0.1;
+
+        vec3 target = pos + amplitude * curl(pos.x * frequency, pos.y * frequency, pos.z * frequency);
+
+       
+
         gl_FragColor = vec4( pos, 1.0 );
     }
 </script>
@@ -33,9 +153,121 @@
     // 이동 방향에 대해 여러 가지 계산할 수 있는 셰이더.
     // 이번에는 아무것도 안 했어.
     // 여기서 Vel의 xyz에 대한 정보를 덮어쓰면 그에 따라 이동 방향이 바뀐다.
-    
+
+   
+    #define delta ( 1.0 / 60.0 )
     #include <common>
 
+    
+    uniform float time;
+
+    vec3 mod289(vec3 x) {
+        return x - floor(x * (1.0 / 289.0)) * 289.0;
+    }
+    
+    vec2 mod289(vec2 x) {
+        return x - floor(x * (1.0 / 289.0)) * 289.0;
+    }
+    
+    vec3 permute(vec3 x) {
+        return mod289(((x*34.0)+1.0)*x);
+    }
+    
+    float noise(vec2 v)
+    {
+        const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0
+                          0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)
+                         -0.577350269189626,  // -1.0 + 2.0 * C.x
+                          0.024390243902439); // 1.0 / 41.0
+        // First corner
+        vec2 i  = floor(v + dot(v, C.yy) );
+        vec2 x0 = v -   i + dot(i, C.xx);
+    
+        // Other corners
+        vec2 i1;
+        //i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0
+        //i1.y = 1.0 - i1.x;
+        i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+        // x0 = x0 - 0.0 + 0.0 * C.xx ;
+        // x1 = x0 - i1 + 1.0 * C.xx ;
+        // x2 = x0 - 1.0 + 2.0 * C.xx ;
+        vec4 x12 = x0.xyxy + C.xxzz;
+        x12.xy -= i1;
+    
+        // Permutations
+        i = mod289(i); // Avoid truncation effects in permutation
+        vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+            + i.x + vec3(0.0, i1.x, 1.0 ));
+    
+        vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+        m = m*m ;
+        m = m*m ;
+    
+        // Gradients: 41 points uniformly over a line, mapped onto a diamond.
+        // The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)
+    
+        vec3 x = 2.0 * fract(p * C.www) - 1.0;
+        vec3 h = abs(x) - 0.5;
+        vec3 ox = floor(x + 0.5);
+        vec3 a0 = x - ox;
+    
+        // Normalise gradients implicitly by scaling m
+        // Approximation of: m *= inversesqrt( a0*a0 + h*h );
+        m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+    
+        // Compute final noise value at P
+        vec3 g;
+        g.x  = a0.x  * x0.x  + h.x  * x0.y;
+        g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+        return 130.0 * dot(m, g);
+    }
+    
+    vec3 curl(float	x,	float	y,	float	z)
+    {
+    
+        float	eps	= 1., eps2 = 2. * eps;
+        float	n1,	n2,	a,	b;
+    
+        x += time * .05;
+        y += time * .05;
+        z += time * .05;
+    
+        vec3	curl = vec3(0.);
+    
+        n1	=	noise(vec2( x,	y	+	eps ));
+        n2	=	noise(vec2( x,	y	-	eps ));
+        a	=	(n1	-	n2)/eps2;
+    
+        n1	=	noise(vec2( x,	z	+	eps));
+        n2	=	noise(vec2( x,	z	-	eps));
+        b	=	(n1	-	n2)/eps2;
+    
+        curl.x	=	a	-	b;
+    
+        n1	=	noise(vec2( y,	z	+	eps));
+        n2	=	noise(vec2( y,	z	-	eps));
+        a	=	(n1	-	n2)/eps2;
+    
+        n1	=	noise(vec2( x	+	eps,	z));
+        n2	=	noise(vec2( x	+	eps,	z));
+        b	=	(n1	-	n2)/eps2;
+    
+        curl.y	=	a	-	b;
+    
+        n1	=	noise(vec2( x	+	eps,	y));
+        n2	=	noise(vec2( x	-	eps,	y));
+        a	=	(n1	-	n2)/eps2;
+    
+        n1	=	noise(vec2(  y	+	eps,	z));
+        n2	=	noise(vec2(  y	-	eps,	z));
+        b	=	(n1	-	n2)/eps2;
+    
+        curl.z	=	a	-	b;
+    
+        return	curl;
+    }
+    
+    
     void main() {
 
         vec3 acceleration = vec3( 0.0 );
@@ -44,11 +276,27 @@
         vec3 pos = tmpPos.xyz;
 
         float idParticle = uv.y * resolution.x + uv.x;
+
         vec4 tmpVel = texture2D( textureVelocity, uv );
         vec3 vel = tmpVel.xyz;
+
+      
+        float frequency = 0.0047;
+        float amplitude = 56.0;
+
+        vec3 target = amplitude * curl(pos.x * frequency, pos.y * frequency, pos.z * frequency);
+       // vec3 vTarget = curl(vel.x,vel.y,vel.z); 
         
+        //vel.y = noise(pos.xz);
+
+       // vel.x = cos(velocityUniforms);
+       // vel.x = sin(time);
+        //vel.y = time;
        
-        gl_FragColor = vec4( vel.xyz, 1.0 );
+       
+       
+       gl_FragColor = vec4( target , 1.0 );
+       //gl_FragColor = vec4( vec3(nVel,nVel,nVel) , 1.0 );
     }
 </script>
 
@@ -74,7 +322,7 @@
 
         // 포인트 사이즈 결정
         vec4 mvPosition = modelViewMatrix * vec4( pos, 1.0 );
-        gl_PointSize = 0.5 * cameraConstant / ( - mvPosition.z );
+        gl_PointSize = 0.8 * cameraConstant / ( - mvPosition.z );
 
         // uv정보의 인도
         vUv = uv;

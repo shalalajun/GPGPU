@@ -22,9 +22,9 @@ let gpuCompute;
 var velocityVariable;
 var positionVariable;
 var positionUniforms;
-var velocityUniforms;
-var particleUniforms;
-var effectController;
+let velocityUniforms;
+let particleUniforms;
+let effectController = { time: 0.0 };
 
 
 /**
@@ -169,6 +169,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 const clock = new THREE.Clock()
 let previousTime = 0
 
+
 const tick = () =>
 {
 
@@ -182,6 +183,10 @@ const tick = () =>
     const elapsedTime = clock.getElapsedTime()
     const deltaTime = elapsedTime - previousTime
     previousTime = elapsedTime
+
+    velocityUniforms[ 'time' ].value = elapsedTime;
+    positionUniforms[ 'time' ].value = elapsedTime;
+  
 
     // Update controls
     controls.update()
@@ -234,8 +239,9 @@ function initComputeRenderer() {
     positionUniforms = positionVariable.material.uniforms;
     velocityUniforms = velocityVariable.material.uniforms;
 
-    velocityUniforms.time = { value: 0.0 };
-    positionUniforms.time = { ValueB: 0.0 };
+    velocityUniforms[ 'time' ] = { value: 0.0  };
+    //velocityUniforms.time = { value: effectController.time };
+    positionUniforms[ 'time' ] = { ValueB: 0.0 };
     // ***********************************
     // 예를 들어 위에서 코멘트 아웃하고 있는 effect Controller 객체의 time을
     // 내가 말하면, effect Controller.time을 갱신하면 uniform 변수도 바뀐다든가 하는 것이 가능하다.
@@ -336,9 +342,12 @@ function fillTextures( texturePosition, textureVelocity ) {
     for ( var k = 0, kl = posArray.length; k < kl; k += 4 ) {
         // Position
         var x, y, z;
-        x = Math.random()*500-250;
-        z = Math.random()*500-250;
-        y = Math.random()*500-250;
+
+
+        x = Math.random()*100-50;
+        z = Math.random()*100-50;
+        y =  Math.random()*200-100;
+
         // posArray의 실태는 1차원 배열이기 때문에
         // x,y,z,w 순서대로 채워간다.
         // w는 이번에는 사용하지 않지만 배열의 순서등을 채워 두면 여러가지 사용할 수 있어 편리
